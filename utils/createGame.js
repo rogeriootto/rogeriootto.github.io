@@ -5,7 +5,7 @@ var barrierPos = -15;
 
 var enemyIndex = 0;
 var enemyPos = {
-    x: -15,
+    x: -20,
     y: 15,
 }
 
@@ -25,13 +25,17 @@ function createGame() {
     }
 
     //resizeBarrier
+    resizeBar();
+
+}
+
+function resizeBar() {
+    //resizeBarrier
     nodeInfosByName['b0'].trs.scale[0] = 2;
     nodeInfosByName['b1'].trs.scale[0] = 2;
     nodeInfosByName['b2'].trs.scale[0] = 2;
     nodeInfosByName['b3'].trs.scale[0] = 2;
-
 }
-
 
 function createPlayer() {
 
@@ -97,8 +101,41 @@ function createEnemy(i) {
     enemyIndex++;
     enemyPos.x += 5;
     if((i % 7) == 0 && i != 0) {
-        console.log('teste')
         enemyPos.y -= 5;
-        enemyPos.x = -15;
+        enemyPos.x = -20;
     }
+}
+
+function createProjectile() {
+    var newObj = {
+        name: 'projectile1',
+        index: 0,
+        translation: [playerPosition.x, -13, 1],
+        children: [],
+        vao: cubeVAO,
+        bufferInfo: cubeBufferInfo,
+    }
+
+    objectsToDraw = [];
+    objects = [];
+    nodeInfosByName = {};
+
+    objeto.children[3].children.push(newObj);
+    console.log(objeto);
+    scene = makeNode(objeto);
+
+    resizeBar();
+    projectileAlive = true;
+}
+
+function deleteProjectile() {
+    projectileAlive = false;
+    objeto.children[3].children.pop();
+
+    objectsToDraw = [];
+    objects = [];
+    nodeInfosByName = {};
+
+    scene = makeNode(objeto);
+    resizeBar();
 }

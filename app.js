@@ -114,6 +114,13 @@ Node.prototype.updateWorldMatrix = function (matrix) {
     child.updateWorldMatrix(worldMatrix);
   });
 };
+var playerPosition = {
+  x: 0,
+  y: 0,
+}
+
+var projectileAlive = false;
+var animationTime = 0;
 
 var then = 0;
 var mouseThen = 0;
@@ -252,7 +259,12 @@ function main() {
         name: "enemy",
         draw: false,
         children: [],
-    }] 
+    },
+    {
+      name: "projectile",
+      draw: false,
+      children: [],
+  }] 
   };
 
   //createObj("pyramid");
@@ -273,6 +285,7 @@ function main() {
   function drawScene(now) {
     now *= 0.001;
     var deltaTime = now - then;
+    animationTime += deltaTime;
     then = now;
 
     var mouseOffset = 0.47;
@@ -311,6 +324,12 @@ function main() {
       
     nodeInfosByName['p1'].trs.translation[0] += (deltaMouse * 20);
 
+    playerPosition.x = nodeInfosByName['p1'].trs.translation[0];
+
+    if(projectileAlive) {
+      nodeInfosByName['projectile1'].trs.translation[1] += deltaTime * 10;
+    }
+
     // Update all world matrices in the scene graph
     scene.updateWorldMatrix();
 
@@ -329,6 +348,16 @@ function main() {
     // for(let i=0; i<luz.specularColor.length - 1; i++) {
     //   specularColorNormalized.push(luz.specularColor[i]/255);
     // }
+
+    if(animationTime < 10 && animationTime) {
+      nodeInfosByName['enemy'].trs.translation[0] += (deltaTime);
+    }
+    else if(animationTime > 10 && animationTime < 20){
+      nodeInfosByName['enemy'].trs.translation[0] -= (deltaTime);
+    }
+    else {
+      animationTime = 0;
+    }
 
     // Compute all the matrices for rendering
     objects.forEach(function (object) {
