@@ -238,7 +238,21 @@ function main() {
   objeto = {
     name: "scene",
     draw: false,
-    children: [] 
+    children: [{
+        name: "player",
+        draw: false,
+        children: [],
+    },
+    {
+        name: "barrier",
+        draw: false,
+        children: [],
+    },
+    {
+        name: "enemy",
+        draw: false,
+        children: [],
+    }] 
   };
 
   //createObj("pyramid");
@@ -251,7 +265,8 @@ function main() {
 
   var fieldOfViewRadians = degToRad(60);
 
-  createObj('cube');
+  createGame();
+  
   requestAnimationFrame(drawScene);
 
   // Draw the scene.
@@ -281,7 +296,7 @@ function main() {
     var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
     var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, 1, 2000); //FOV, aspectRatio, NearPlane, FarPlane
 
-    cameras[0].cameraPosition = [0, 0, 15];
+    cameras[0].cameraPosition = [0, 0, 30];
     cameras[0].target = [0, 0, 0];
 
     // Compute the camera's matrix using look at.
@@ -294,8 +309,7 @@ function main() {
     
     var fRotationRadians = degToRad(0);
       
-    nodeInfosByName['0'].trs.translation[0] += (deltaMouse * 10);
-    console.log(nodeInfosByName['0'].trs.translation[0])
+    nodeInfosByName['p1'].trs.translation[0] += (deltaMouse * 20);
 
     // Update all world matrices in the scene graph
     scene.updateWorldMatrix();
