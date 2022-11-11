@@ -3,25 +3,59 @@
     padding: 0;
 }
 
+@font-face {
+    font-family: 'unbutton';
+    src: url(fonts/unbutton.ttf);
+}
+
 
 #motherDiv {
     display: flex;
     flex-direction: row;
     justify-content: space-evenly;
-    background-color: black;
+    background-image: url(img/bg.png);
+    background-repeat: repeat;
+    height: 100%;
+
 }
 
 #siLogo {
-    width: 700px;
+    width: 15%;
+    height: auto;
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-top: 2%;
+    margin-bottom: auto;
 }
 
-img{
+img {
     width: 100%;
-    height: 20%;
+    height: auto;
 }
 
-canvas {
+#jogo {
     background-color: white;
-    width: 1280px;
-    height: 720px;
+    width: 70%;
+    height: auto;
+}
+
+#hud {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-left: auto;
+    margin-right: auto;
+    width: 15%;
+    height: auto;
+}
+
+h1 {
+    text-align: center;
+    color: white;
+    font-family: 'unbutton', sans-serif;
+    font-size: 3vw;
+}
+
+#lifes {
+    margin-bottom: 2vw;
 }

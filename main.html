@@ -4,19 +4,27 @@
         <div id="motherDiv">
             <div id="siLogo">
                 <img src="img/logo.png">
+                <img src="img/controls.png">
             </div>
-            <canvas id="canvas"></canvas>
-            <!-- <div id="gui"></div> <-->
+            <div id="jogo">
+                <canvas id="canvas"></canvas>
+            </div>
+            <div id="hud">
+                <div id="score">
+                    <h1>Score</h1>
+                    <h1>00000</h1>
+                </div> 
+                <div id="lifes">
+                    <h1>3</h1>
+                    <h1>Lifes</h1>
+                </div>
+            </div>
         </div>
         
-        <script src="twgl.js"></script>
-        <script src="https://webgl2fundamentals.org/webgl/resources/webgl-utils.js"></script>
-        <script src="m4.js"></script>
-        <script src="normal.js"></script>
-        <!-- ><script src="https://webgl2fundamentals.org/webgl/resources/flattened-primitives.js"></script> </ -->
-        <script type="text/javascript" src="dat.gui-0.7.9/build/dat.gui.js"></script>
-        <script src ="objectFormat.js"></script>
-        <script src="ui.js"></script>
+        <script src="utils/twgl.js"></script>
+        <script src="utils/m4.js"></script>
+        <script src="utils/webgl-utils.js"></script>
+        <script src="utils/normal.js"></script>
 
         <script src="app.js"></script>  
         
