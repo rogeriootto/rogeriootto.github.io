@@ -8,6 +8,10 @@
     src: url(fonts/unbutton.ttf);
 }
 
+canvas {
+    height: 100%;
+    width: 100%;
+}
 
 #motherDiv {
     display: flex;
