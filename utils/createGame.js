@@ -101,7 +101,7 @@ function createEnemy(i) {
     enemyIndex++;
     enemyPos.x += 5;
     if((i % 7) == 0 && i != 0) {
-        enemyPos.y -= 5;
+        enemyPos.y -= 4;
         enemyPos.x = -20;
     }
 }

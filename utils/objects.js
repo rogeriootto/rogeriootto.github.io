@@ -178,3 +178,7 @@ var arrays_pyramid = {
     ],
     
   }
+
+  function loadModels() {
+    
+  }

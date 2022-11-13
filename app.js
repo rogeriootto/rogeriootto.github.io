@@ -49,7 +49,6 @@ void main() {
 }
 `;
 
-
 var TRS = function() {
   this.translation = [0, 0, 0];
   this.rotation = [0, 0, 0];
@@ -357,6 +356,7 @@ function main() {
     }
     else {
       animationTime = 0;
+      nodeInfosByName['enemy'].trs.translation[1] -= 2;
     }
 
     // Compute all the matrices for rendering

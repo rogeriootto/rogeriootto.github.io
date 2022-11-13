@@ -16,6 +16,7 @@ canvas.addEventListener('mousemove', function (e) {
 canvas.addEventListener('click', function(f) {
     if(!projectileAlive) {
         createProjectile();
+        loadModels();
     }
     else {
         deleteProjectile();
