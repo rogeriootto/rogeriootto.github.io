@@ -53,6 +53,8 @@ var TRS = function() {
   this.translation = [0, 0, 0];
   this.rotation = [0, 0, 0];
   this.scale = [1, 1, 1];
+  this.index = 0;
+  this.type = 'p';
 };
 
 TRS.prototype.getMatrix = function(dst) {
@@ -60,6 +62,8 @@ TRS.prototype.getMatrix = function(dst) {
   var t = this.translation;
   var r = this.rotation;
   var s = this.scale;
+  var i = this.index;
+  var ty = this.type;
 
   // compute a matrix from translation, rotation, and scale
   m4.translation(t[0], t[1], t[2], dst);
@@ -119,6 +123,9 @@ var playerPosition = {
 }
 
 var projectileAlive = false;
+var enemyProjectile1Alive = false;
+var enemyProjectile2Alive = false;
+
 var animationTime = 0;
 
 var then = 0;
@@ -145,6 +152,9 @@ var programInfo;
 var programInfoWireframe;
 var programInfoTexture;
 var gl;
+
+var speed = 1;
+var animationRegulator;
 
 //CAMERA VARIABLES
 var cameras = [{
@@ -200,6 +210,7 @@ const calculateBarycentric = (length) => {
   for (let i = 0; i < n; i++) barycentric.push(1, 0, 0, 0, 1, 0, 0, 0, 1);
   return barycentric;
 };
+
 
 function main() {
   // Get A WebGL context
@@ -263,12 +274,23 @@ function main() {
       name: "projectile",
       draw: false,
       children: [],
-  }] 
+    },
+    {
+      name: "enemyProjectiles",
+      draw: false,
+      children: [],
+    },
+    {
+      name: "enemyProjectiles2",
+      draw: false,
+      children: [],
+    },
+  ] 
   };
 
   //createObj("pyramid");
   
-  scene = makeNode(objeto);
+  //scene = makeNode(objeto);
 
   function degToRad(d) {
     return (d * Math.PI) / 180;
@@ -286,7 +308,7 @@ function main() {
     var deltaTime = now - then;
     animationTime += deltaTime;
     then = now;
-
+    
     var mouseOffset = 0.47;
 
     if(mousePositionXNormalized) {
@@ -326,7 +348,55 @@ function main() {
     playerPosition.x = nodeInfosByName['p1'].trs.translation[0];
 
     if(projectileAlive) {
-      nodeInfosByName['projectile1'].trs.translation[1] += deltaTime * 10;
+      nodeInfosByName['projectile1'].trs.translation[1] += deltaTime * 20;
+      
+      //COLISÕES
+
+       //COLISÕES PROJETIL DO PLAYER COM O RESTO
+      for (const item in nodeInfosByName) {
+        if(item != 'scene' && item != 'player' &&
+        item != 'barrier' && item != 'enemy' &&
+        item != 'projectile' && item != 'projectile1' &&
+        item != 'enemyProjectiles' && item != 'enemyProjectiles2') {
+          checkProjectileCollision(nodeInfosByName['projectile1'], nodeInfosByName[item]);
+        }
+      }
+    }
+
+    //COLISÕES PLAYER COM OS INIMIGOS OU PROJETEIS INIMIGOS PRA VER SE PERDEU
+    for (const item in nodeInfosByName) {
+      if(item != 'scene' && item != 'player' &&
+        item != 'barrier' && item != 'enemy' &&
+        item != 'projectile' && item != 'projectile1' &&
+        item != 'p1' && item != 'enemyProjectiles' && 
+        item != 'enemyProjectiles2') {
+          checkPlayerCollision(nodeInfosByName['p1'], nodeInfosByName[item])
+        }
+    }
+
+    if(enemyProjectile1Alive) {
+      nodeInfosByName['pro0'].trs.translation[1] -= deltaTime * 20;
+    }
+
+    if(enemyProjectile2Alive) {
+      nodeInfosByName['pro1'].trs.translation[1] -= deltaTime * 20;
+    }
+
+    console.log(animationTime)
+    
+    if(animationTime > 1.5 && animationTime < 3) {
+      if(!enemyProjectile1Alive) {
+        createEnemyProjectile();
+      }
+      
+      createEnemyProjectile2();
+      animationTime = 0;
+    }
+    else if(animationTime > 3) {
+      if(!enemyProjectile2Alive) {
+        createEnemyProjectile2();
+      }
+      animationTime = 0;
     }
 
     // Update all world matrices in the scene graph
@@ -348,16 +418,18 @@ function main() {
     //   specularColorNormalized.push(luz.specularColor[i]/255);
     // }
 
-    if(animationTime < 10 && animationTime) {
-      nodeInfosByName['enemy'].trs.translation[0] += (deltaTime);
+    if(animationRegulator > 190 && speed > 0) {
+      speed += 1;
+      speed *= -1;
     }
-    else if(animationTime > 10 && animationTime < 20){
-      nodeInfosByName['enemy'].trs.translation[0] -= (deltaTime);
+    else if(animationRegulator < -24 && speed < 0){
+      speed -= 1;
+      speed *= -1;
+      moveEnemys(deltaTime, speed, 2);
     }
-    else {
-      animationTime = 0;
-      nodeInfosByName['enemy'].trs.translation[1] -= 2;
-    }
+    console.log(speed)
+
+    moveEnemys(deltaTime, speed, 1);
 
     // Compute all the matrices for rendering
     objects.forEach(function (object) {
@@ -370,7 +442,8 @@ function main() {
         viewProjectionMatrix,
         object.worldMatrix
       );
-        
+      
+
       object.drawInfo.uniforms.u_lightWorldPosition = [0, 0, 5];
 
       object.drawInfo.uniforms.u_world = m4.multiply(object.worldMatrix, m4.yRotation(fRotationRadians));
@@ -384,10 +457,11 @@ function main() {
       object.drawInfo.uniforms.u_color= [0,1,0,1];
     });
 
-    
     // ------ Draw the objects --------
-
     twgl.drawObjectList(gl, objectsToDraw);
+
+    document.getElementById('gameScore').textContent = score;
+    //updateScene();
 
     requestAnimationFrame(drawScene);
   }
