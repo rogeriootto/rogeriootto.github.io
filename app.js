@@ -1,22 +1,31 @@
 "use strict";
 
 var vs = `#version 300 es
+
 in vec4 a_position;
 in vec3 a_normal;
+
 uniform vec3 u_lightWorldPosition;
 uniform vec3 u_viewWorldPosition;
+
 uniform mat4 u_matrix;
 uniform mat4 u_world;
 uniform mat4 u_worldInverseTranspose;
+
 out vec3 v_normal;
 out vec3 v_surfaceToLight;
 out vec3 v_surfaceToView;
+
 void main() {
+
   // Multiply the position by the matrix.
   gl_Position = u_matrix * a_position;
+
   // Pass the color to the fragment shader.
   v_normal = mat3(u_worldInverseTranspose) * a_normal;
+
   vec3 surfaceWorldPosition = (u_world * a_position).xyz;
+
   v_surfaceToLight = u_lightWorldPosition - surfaceWorldPosition;
   v_surfaceToView = u_viewWorldPosition - surfaceWorldPosition;
 }
@@ -24,25 +33,36 @@ void main() {
 
 var fs = `#version 300 es
 precision highp float;
+
 // Passed in from the vertex shader.
 in vec3 v_normal;
 in vec3 v_surfaceToLight;
 in vec3 v_surfaceToView;
+
 uniform vec4 u_color;
+
 uniform float u_shininess;
+
 uniform vec3 u_lightColor;
 uniform vec3 u_specularColor;
+
 out vec4 outColor;
+
 void main() {
+
   vec3 normal = normalize(v_normal);
   vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
   vec3 surfaceToViewDirection = normalize(v_surfaceToView);
   vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
+
   float light = dot(normal, surfaceToLightDirection);
+
   float specular = 0.0;
+
   if (light > 0.0) {
     specular = pow(dot(normal, halfVector), u_shininess);
   }
+
   outColor = u_color;
   outColor.rgb *= light * u_lightColor;
   outColor.rgb += specular * u_specularColor;
@@ -126,6 +146,10 @@ var projectileAlive = false;
 var enemyProjectile1Alive = false;
 var enemyProjectile2Alive = false;
 
+var playerLive = 3;
+var barrierLife = [3,3,3,3];
+var level = 1;
+
 var animationTime = 0;
 
 var then = 0;
@@ -136,12 +160,9 @@ var texture;
 
 var cubeVAO;
 var cubeBufferInfo;
-var pyramidBufferInfo;
-var pyraVAO;
-var amongusVAO;
-var amongusBufferInfo;
-var triangleVAO;
-var triangleBufferInfo;
+var sphereVAO;
+var sphereBufferInfo;
+var sphere;
 
 var objectsToDraw = [];
 var objects = [];
@@ -155,6 +176,8 @@ var gl;
 
 var speed = 1;
 var animationRegulator;
+
+var gameOver = false;
 
 //CAMERA VARIABLES
 var cameras = [{
@@ -224,11 +247,6 @@ function main() {
   //Calcula a normal dos objetos para inicialização:
   arrays_cube.normal = calculateNormal(arrays_cube.position, arrays_cube.indices);
   arrays_cube.barycentric = calculateBarycentric(arrays_cube.position.length);
-  arrays_pyramid.normal = calculateNormal(arrays_pyramid.position, arrays_pyramid.indices);
-  arrays_pyramid.barycentric = calculateBarycentric(arrays_pyramid.position.length);
-
-  triangleData.normal = calculateNormal(triangleData.position, triangleData.indices);
-  triangleData.barycentric = calculateBarycentric(triangleData.position.length);
 
   // Tell the twgl to match position with a_position, n
   // normal with a_normal etc..
@@ -236,16 +254,16 @@ function main() {
   //cubeBufferInfo = flattenedPrimitives.createCubeBufferInfo(gl, 1);
 
   cubeBufferInfo = twgl.createBufferInfoFromArrays(gl, arrays_cube);
-  pyramidBufferInfo = twgl.createBufferInfoFromArrays(gl, arrays_pyramid);
-  triangleBufferInfo = twgl.createBufferInfoFromArrays(gl, triangleData);
-  
+
+  sphere = twgl.primitives.createSphereVertices(1,16,16);
+  sphereBufferInfo = twgl.createBufferInfoFromArrays(gl, sphere);
+
   // setup GLSL program
-  
   programInfo = twgl.createProgramInfo(gl, [vs, fs]);
 
   cubeVAO = twgl.createVAOFromBufferInfo(gl, programInfo, cubeBufferInfo);
-  pyraVAO = twgl.createVAOFromBufferInfo(gl, programInfo, pyramidBufferInfo);
-  triangleVAO = twgl.createVAOFromBufferInfo(gl, programInfo, triangleBufferInfo);
+  sphereVAO = twgl.createVAOFromBufferInfo(gl, programInfo, sphereBufferInfo);
+
 
   objectsToDraw = [];
   objects = [];
@@ -348,7 +366,12 @@ function main() {
     playerPosition.x = nodeInfosByName['p1'].trs.translation[0];
 
     if(projectileAlive) {
-      nodeInfosByName['projectile1'].trs.translation[1] += deltaTime * 20;
+      nodeInfosByName['projectile1'].trs.translation[1] += deltaTime * 30;
+
+      if(nodeInfosByName['projectile1'].trs.translation[1] > 20) {
+        deleteProjectile();
+      }
+      //console.log(nodeInfosByName['projectile1'].trs)
       
       //COLISÕES
 
@@ -374,25 +397,51 @@ function main() {
         }
     }
 
+    for (const item in nodeInfosByName) {
+      if(item != 'scene' && item != 'player' &&
+        item != 'barrier' && item != 'enemy' &&
+        item != 'projectile' && item != 'projectile1' &&
+        item != 'p1' && item != 'enemyProjectiles' && 
+        item != 'enemyProjectiles2' && item != 'b0'
+        && item != 'b1' && item != 'b2' && item != 'b3') {
+          checkBarrierCollision(nodeInfosByName['b0'], nodeInfosByName[item]);
+          checkBarrierCollision(nodeInfosByName['b1'], nodeInfosByName[item]);
+          checkBarrierCollision(nodeInfosByName['b2'], nodeInfosByName[item]);
+          checkBarrierCollision(nodeInfosByName['b3'], nodeInfosByName[item]);
+        }
+    }
+
+
     if(enemyProjectile1Alive) {
-      nodeInfosByName['pro0'].trs.translation[1] -= deltaTime * 20;
+      nodeInfosByName['pro0'].trs.type = 'pro';
+      nodeInfosByName['pro0'].trs.index = 0;
+      nodeInfosByName['pro0'].trs.translation[1] -= deltaTime * 40;
+
+      if(nodeInfosByName['pro0'].trs.translation[1] < -20) {
+        enemyProjectile1Alive = false;
+      }
     }
 
     if(enemyProjectile2Alive) {
-      nodeInfosByName['pro1'].trs.translation[1] -= deltaTime * 20;
-    }
+      nodeInfosByName['pro1'].trs.translation[1] -= deltaTime * 40;
 
-    console.log(animationTime)
+
+      nodeInfosByName['pro1'].trs.type = 'pro';
+      nodeInfosByName['pro1'].trs.index = 1;
+
+      if(nodeInfosByName['pro1'].trs.translation[1] < -20) {
+        enemyProjectile2Alive = false;
+      }
+
+    }
     
-    if(animationTime > 1.5 && animationTime < 3) {
+    if(animationTime > 0.5 && animationTime < 0.6) {
       if(!enemyProjectile1Alive) {
         createEnemyProjectile();
+        animationTime = 0;
       }
-      
-      createEnemyProjectile2();
-      animationTime = 0;
     }
-    else if(animationTime > 3) {
+    else if(animationTime > 0.6) {
       if(!enemyProjectile2Alive) {
         createEnemyProjectile2();
       }
@@ -427,8 +476,8 @@ function main() {
       speed *= -1;
       moveEnemys(deltaTime, speed, 2);
     }
-    console.log(speed)
 
+    console.log(barrierLife)
     moveEnemys(deltaTime, speed, 1);
 
     // Compute all the matrices for rendering
@@ -461,9 +510,16 @@ function main() {
     twgl.drawObjectList(gl, objectsToDraw);
 
     document.getElementById('gameScore').textContent = score;
+    document.getElementById('playerLife').textContent = playerLive;
+    document.getElementById('level').textContent = level;
     //updateScene();
 
     requestAnimationFrame(drawScene);
+
+    if(playerLive == 0 && !gameOver) {
+      alert('ruim');
+      gameOver = true;
+    }
   }
 }
 

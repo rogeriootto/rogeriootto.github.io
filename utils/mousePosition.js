@@ -7,7 +7,6 @@ var canvas = document.getElementById('canvas');
 
 // quando mexe pela tela com o mouse
 canvas.addEventListener('mousemove', function (e) {
-    document.getElementById('x-value-move').textContent = (e.x);
     mousePositionX = e.x;
     mousePositionXNormalized = parseFloat((((((e.x)/(canvas.width))*2) - 1)).toFixed(2))
 })
@@ -16,9 +15,6 @@ canvas.addEventListener('mousemove', function (e) {
 canvas.addEventListener('click', function(f) {
     if(!projectileAlive) {
         createProjectile();
-    }
-    else {
-        deleteProjectile();
     }
     //addVertice();
 })

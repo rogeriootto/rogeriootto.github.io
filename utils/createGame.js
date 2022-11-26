@@ -51,7 +51,35 @@ function checkProjectileCollision (objeto1, objeto2) {
             }
         }
     }
+    //Não Colidiu
+}
 
+function checkBarrierCollision (barrier, objeto) {
+    
+    if(!(objeto.trs.translation === undefined)) {
+         //eixo X
+        if((barrier.trs.translation[0] + 2) >= (objeto.trs.translation[0] - 1) && (barrier.trs.translation[0] - 2) <= (objeto.trs.translation[0] + 1)) {
+            //eixo Y
+            if((barrier.trs.translation[1] + 1) >= (objeto.trs.translation[1] -1) && (barrier.trs.translation[1] - 1) <= (objeto.trs.translation[1] + 1)) {
+                //COLIDIU
+
+                barrierLife[barrier.trs.index] -= 1;
+
+                if(barrierLife[barrier.trs.index] == 0) {
+                    barrier.trs.translation = [700,700,700];
+                }
+                objeto.trs.translation = [50,50,50];
+                if(objeto.trs.type == 'pro') {
+                    if(objeto.trs.index == 0) {
+                        enemyProjectile1Alive = false;
+                    }
+                    else {
+                        enemyProjectile2Alive = false;
+                    }
+                }
+            }
+        }
+    }
     //Não Colidiu
 }
 
@@ -62,7 +90,18 @@ function checkPlayerCollision(player, objeto) {
             //eixo Y
             if((player.trs.translation[1] + 1) >= (objeto.trs.translation[1] -1) && (player.trs.translation[1] - 1) <= (objeto.trs.translation[1] + 1)) {
                 //COLIDIU
-                //speed = 0;
+                playerLive -= 1;
+                objeto.trs.translation = [50,50,50];
+
+                if(objeto.trs.type == 'pro') {
+                    if(objeto.trs.index == 0) {
+                        enemyProjectile1Alive = false;
+                    }
+                    else {
+                        enemyProjectile2Alive = false;
+                    }
+                }
+
             }
         }
     }
@@ -163,7 +202,7 @@ function createEnemy(i) {
     
     scene = makeNode(objeto);
    
-    enemyPos.x += 5;
+    enemyPos.x += 4.5;
     if((i % 7) == 0 && i != 0) {
         enemyPos.y -= 4;
         enemyPos.x = -20;
@@ -175,7 +214,6 @@ function createEnemy(i) {
 function createProjectile() {
 
     updateScene()
-  
 
     var newObj = {
         name: 'projectile1',
@@ -183,8 +221,8 @@ function createProjectile() {
         translation: [playerPosition.x, -11, 0],
         type: 'pro',
         children: [],
-        vao: cubeVAO,
-        bufferInfo: cubeBufferInfo,
+        vao: sphereVAO,
+        bufferInfo: sphereBufferInfo,
     }
     
     objectsToDraw = [];
@@ -194,6 +232,7 @@ function createProjectile() {
     objeto.children[3].children.push(newObj);
 
     scene = makeNode(objeto);
+    updateScene()
     
     resizeBar();
     setObjIndex()
@@ -211,7 +250,7 @@ function deleteProjectile() {
     objects = [];
     nodeInfosByName = {};
 
-    scene = makeNode(objeto);  //AQUI ESTÁ O PROBLEMA
+    scene = makeNode(objeto);
 
     resizeBar();
     setObjIndex()
@@ -220,12 +259,28 @@ function deleteProjectile() {
 function deleteObject(objetcToDelete) {
 
     bottomEnemy.forEach(function(item, index) {
-        if(objetcToDelete.trs.index == item) {
-            bottomEnemy[index] -= 7;
+        if(objetcToDelete.trs.type == 'e') {
+            if(objetcToDelete.trs.index == item) {
+                if(bottomEnemy[index] - 7 >= 0){
+                    bottomEnemy[index] -= 7;
+                }
+            }
         }
     })
 
-    nodeInfosByName[`${objetcToDelete.trs.type}${objetcToDelete.trs.index}`].trs.translation = [500,500,500]
+    if(!(objetcToDelete.trs.type == 'p')) {
+        nodeInfosByName[`${objetcToDelete.trs.type}${objetcToDelete.trs.index}`].trs.translation = [500,500,500];
+    }
+    
+
+    if(objetcToDelete.trs.type == 'pro') {
+        if(objetcToDelete.trs.index == 0) {
+            enemyProjectile1Alive = false;
+        }
+        else {
+            enemyProjectile2Alive = false;
+        }
+    }
 }
 
 function updateScene() {
@@ -255,7 +310,6 @@ function updateScene() {
 }
 
 function givePoints(objectType, objectIndex) {
-    console.log(objectType)
     score += 100;
 }
 
@@ -287,8 +341,8 @@ function createEnemyProjectile() {
         translation: [nodeInfosByName[`e${bottomEnemy[randomEnemy]}`].trs.translation[0], nodeInfosByName[`e${bottomEnemy[randomEnemy]}`].trs.translation[1] - 1, 0],
         type: 'pro',
         children: [],
-        vao: cubeVAO,
-        bufferInfo: cubeBufferInfo,
+        vao: sphereVAO,
+        bufferInfo: sphereBufferInfo,
     }
     
     objectsToDraw = [];
@@ -313,12 +367,12 @@ function createEnemyProjectile2() {
 
     var newObj = {
         name: 'pro1',
-        index: 0,
+        index: 1,
         translation: [nodeInfosByName[`e${bottomEnemy[randomEnemy]}`].trs.translation[0], nodeInfosByName[`e${bottomEnemy[randomEnemy]}`].trs.translation[1] - 1, 0],
         type: 'pro',
         children: [],
-        vao: cubeVAO,
-        bufferInfo: cubeBufferInfo,
+        vao: sphereVAO,
+        bufferInfo: sphereBufferInfo,
     }
     
     objectsToDraw = [];
