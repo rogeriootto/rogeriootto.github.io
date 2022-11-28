@@ -142,6 +142,14 @@ var playerPosition = {
   y: 0,
 }
 
+var bgm;
+var deathSound = new Audio('sfx/death.mp3');
+var shootSound = new Audio('sfx/shoot.mp3');
+var hitSound = new Audio('sfx/hit.mp3');
+
+deathSound.volume = 0.5;
+shootSound.volume = 0.8;
+
 var projectileAlive = false;
 var enemyProjectile1Alive = false;
 var enemyProjectile2Alive = false;
@@ -149,13 +157,14 @@ var enemyProjectile2Alive = false;
 var playerLive = 3;
 var barrierLife = [3,3,3,3];
 var level = 1;
+var numberOfEnemys = 21;
 
 var animationTime = 0;
 
 var then = 0;
 var mouseThen = 0;
 var mouseNow = 0;
-
+var levelAnimationTime = 0;
 var texture;
 
 var cubeVAO;
@@ -181,7 +190,7 @@ var gameOver = false;
 
 //CAMERA VARIABLES
 var cameras = [{
-  cameraPosition: [0,0,4],
+  cameraPosition: [0, 0, 30],
   target: [0,0,0],
   up: [0, 1, 0],
 },
@@ -243,6 +252,17 @@ function main() {
   if (!gl) {
     return;
   }
+
+  level = Math.floor(Math.random() * 5) + 1;
+
+  if(level % 2 == 0) {
+    bgm = new Audio('sfx/bgm2.mp3');
+  }
+  else {
+    bgm = new Audio('sfx/bgm.mp3');
+  }
+  
+  bgm.volume = 0.2;
 
   //Calcula a normal dos objetos para inicialização:
   arrays_cube.normal = calculateNormal(arrays_cube.position, arrays_cube.indices);
@@ -322,205 +342,239 @@ function main() {
 
   // Draw the scene.
   function drawScene(now) {
-    now *= 0.001;
-    var deltaTime = now - then;
-    animationTime += deltaTime;
-    then = now;
-    
-    var mouseOffset = 0.47;
+    if(!gameOver) {
 
-    if(mousePositionXNormalized) {
-        mouseNow = mousePositionXNormalized - mouseOffset;
-    }
-
-    var deltaMouse = mouseNow - mouseThen;
-    mouseThen = mouseNow;
-    
-    twgl.resizeCanvasToDisplaySize(gl.canvas);
-
-    // Tell WebGL how to convert from clip space to pixels
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-    gl.disable(gl.CULL_FACE);
-    gl.enable(gl.DEPTH_TEST);
-
-    // Compute the projection matrix
-    var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, 1, 2000); //FOV, aspectRatio, NearPlane, FarPlane
-
-    cameras[0].cameraPosition = [0, 0, 30];
-    cameras[0].target = [0, 0, 0];
-
-    // Compute the camera's matrix using look at.
-    var cameraMatrix = m4.lookAt(cameras[0].cameraPosition, cameras[0].target, cameras[0].up);
-
-    // Make a view matrix from the camera matrix.
-    var viewMatrix = m4.inverse(cameraMatrix);
-    
-    var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
-    
-    var fRotationRadians = degToRad(0);
+      now *= 0.001;
+      var deltaTime = now - then;
+      animationTime += deltaTime;
+      levelAnimationTime += deltaTime;
+      then = now;
       
-    nodeInfosByName['p1'].trs.translation[0] += (deltaMouse * 20);
+      var mouseOffset = 0.47;
 
-    playerPosition.x = nodeInfosByName['p1'].trs.translation[0];
-
-    if(projectileAlive) {
-      nodeInfosByName['projectile1'].trs.translation[1] += deltaTime * 30;
-
-      if(nodeInfosByName['projectile1'].trs.translation[1] > 20) {
-        deleteProjectile();
+      if(mousePositionXNormalized) {
+          mouseNow = mousePositionXNormalized - mouseOffset;
       }
-      //console.log(nodeInfosByName['projectile1'].trs)
-      
-      //COLISÕES
 
-       //COLISÕES PROJETIL DO PLAYER COM O RESTO
+      var deltaMouse = mouseNow - mouseThen;
+      mouseThen = mouseNow;
+      
+      twgl.resizeCanvasToDisplaySize(gl.canvas);
+
+      // Tell WebGL how to convert from clip space to pixels
+      gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+      gl.disable(gl.CULL_FACE);
+      gl.enable(gl.DEPTH_TEST);
+
+      // Compute the projection matrix
+      var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+      var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, 1, 2000); //FOV, aspectRatio, NearPlane, FarPlane
+
+      // Compute the camera's matrix using look at.
+      var cameraMatrix = m4.lookAt(cameras[0].cameraPosition, cameras[0].target, cameras[0].up);
+
+      // Make a view matrix from the camera matrix.
+      var viewMatrix = m4.inverse(cameraMatrix);
+      
+      var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
+      
+      var fRotationRadians = degToRad(0);
+        
+      nodeInfosByName['p1'].trs.translation[0] += (deltaMouse * 20);
+
+      playerPosition.x = nodeInfosByName['p1'].trs.translation[0];
+
+      if(projectileAlive) {
+        nodeInfosByName['projectile1'].trs.translation[1] += deltaTime * 30;
+
+        if(nodeInfosByName['projectile1'].trs.translation[1] > 20) {
+          deleteProjectile();
+        }
+        //console.log(nodeInfosByName['projectile1'].trs)
+        
+        //COLISÕES
+
+        //COLISÕES PROJETIL DO PLAYER COM O RESTO
+        for (const item in nodeInfosByName) {
+          if(item != 'scene' && item != 'player' &&
+          item != 'barrier' && item != 'enemy' &&
+          item != 'projectile' && item != 'projectile1' &&
+          item != 'enemyProjectiles' && item != 'enemyProjectiles2') {
+            checkProjectileCollision(nodeInfosByName['projectile1'], nodeInfosByName[item]);
+          }
+        }
+      }
+
+      //COLISÕES PLAYER COM OS INIMIGOS OU PROJETEIS INIMIGOS PRA VER SE PERDEU
       for (const item in nodeInfosByName) {
         if(item != 'scene' && item != 'player' &&
-        item != 'barrier' && item != 'enemy' &&
-        item != 'projectile' && item != 'projectile1' &&
-        item != 'enemyProjectiles' && item != 'enemyProjectiles2') {
-          checkProjectileCollision(nodeInfosByName['projectile1'], nodeInfosByName[item]);
-        }
-      }
-    }
-
-    //COLISÕES PLAYER COM OS INIMIGOS OU PROJETEIS INIMIGOS PRA VER SE PERDEU
-    for (const item in nodeInfosByName) {
-      if(item != 'scene' && item != 'player' &&
-        item != 'barrier' && item != 'enemy' &&
-        item != 'projectile' && item != 'projectile1' &&
-        item != 'p1' && item != 'enemyProjectiles' && 
-        item != 'enemyProjectiles2') {
-          checkPlayerCollision(nodeInfosByName['p1'], nodeInfosByName[item])
-        }
-    }
-
-    for (const item in nodeInfosByName) {
-      if(item != 'scene' && item != 'player' &&
-        item != 'barrier' && item != 'enemy' &&
-        item != 'projectile' && item != 'projectile1' &&
-        item != 'p1' && item != 'enemyProjectiles' && 
-        item != 'enemyProjectiles2' && item != 'b0'
-        && item != 'b1' && item != 'b2' && item != 'b3') {
-          checkBarrierCollision(nodeInfosByName['b0'], nodeInfosByName[item]);
-          checkBarrierCollision(nodeInfosByName['b1'], nodeInfosByName[item]);
-          checkBarrierCollision(nodeInfosByName['b2'], nodeInfosByName[item]);
-          checkBarrierCollision(nodeInfosByName['b3'], nodeInfosByName[item]);
-        }
-    }
-
-
-    if(enemyProjectile1Alive) {
-      nodeInfosByName['pro0'].trs.type = 'pro';
-      nodeInfosByName['pro0'].trs.index = 0;
-      nodeInfosByName['pro0'].trs.translation[1] -= deltaTime * 40;
-
-      if(nodeInfosByName['pro0'].trs.translation[1] < -20) {
-        enemyProjectile1Alive = false;
-      }
-    }
-
-    if(enemyProjectile2Alive) {
-      nodeInfosByName['pro1'].trs.translation[1] -= deltaTime * 40;
-
-
-      nodeInfosByName['pro1'].trs.type = 'pro';
-      nodeInfosByName['pro1'].trs.index = 1;
-
-      if(nodeInfosByName['pro1'].trs.translation[1] < -20) {
-        enemyProjectile2Alive = false;
+          item != 'barrier' && item != 'enemy' &&
+          item != 'projectile' && item != 'projectile1' &&
+          item != 'p1' && item != 'enemyProjectiles' && 
+          item != 'enemyProjectiles2') {
+            checkPlayerCollision(nodeInfosByName['p1'], nodeInfosByName[item])
+          }
       }
 
-    }
-    
-    if(animationTime > 0.5 && animationTime < 0.6) {
-      if(!enemyProjectile1Alive) {
-        createEnemyProjectile();
+      for (const item in nodeInfosByName) {
+        if(item != 'scene' && item != 'player' &&
+          item != 'barrier' && item != 'enemy' &&
+          item != 'projectile' && item != 'projectile1' &&
+          item != 'p1' && item != 'enemyProjectiles' && 
+          item != 'enemyProjectiles2' && item != 'b0'
+          && item != 'b1' && item != 'b2' && item != 'b3') {
+            checkBarrierCollision(nodeInfosByName['b0'], nodeInfosByName[item]);
+            checkBarrierCollision(nodeInfosByName['b1'], nodeInfosByName[item]);
+            checkBarrierCollision(nodeInfosByName['b2'], nodeInfosByName[item]);
+            checkBarrierCollision(nodeInfosByName['b3'], nodeInfosByName[item]);
+          }
+      }
+
+
+      if(enemyProjectile1Alive) {
+        nodeInfosByName['pro0'].trs.type = 'pro';
+        nodeInfosByName['pro0'].trs.index = 0;
+        nodeInfosByName['pro0'].trs.translation[1] -= deltaTime * 40;
+
+        if(nodeInfosByName['pro0'].trs.translation[1] < -20) {
+          enemyProjectile1Alive = false;
+        }
+      }
+
+      if(enemyProjectile2Alive) {
+        nodeInfosByName['pro1'].trs.translation[1] -= deltaTime * 40;
+
+
+        nodeInfosByName['pro1'].trs.type = 'pro';
+        nodeInfosByName['pro1'].trs.index = 1;
+
+        if(nodeInfosByName['pro1'].trs.translation[1] < -20) {
+          enemyProjectile2Alive = false;
+        }
+
+      }
+      
+      if(animationTime > 0.5 && animationTime < 1) {
+        if(!enemyProjectile1Alive) {
+          createEnemyProjectile();
+        }
+      }
+      else if(animationTime > 1) {
+        if(!enemyProjectile2Alive) {
+          createEnemyProjectile2();
+        }
         animationTime = 0;
       }
-    }
-    else if(animationTime > 0.6) {
-      if(!enemyProjectile2Alive) {
-        createEnemyProjectile2();
+
+      if(level == 2) {
+        nodeInfosByName['scene'].trs.rotation[1] = now;
       }
-      animationTime = 0;
-    }
+      else if(level == 3) {
+        if(levelAnimationTime > 2 && levelAnimationTime < 4) {
+          cameras[0].cameraPosition = [15,15,30]
+        }
+        else if(levelAnimationTime > 4) {
+          cameras[0].cameraPosition = [-15,15,30]
+          levelAnimationTime = 0;
+        }
+      }
+      else if(level == 4) {
+        cameras[0].cameraPosition = [nodeInfosByName['p1'].trs.translation[0] ,nodeInfosByName['p1'].trs.translation[1] - 5, nodeInfosByName['p1'].trs.translation[2] + 2]
+        cameras[0].target = [nodeInfosByName['p1'].trs.translation[0], 0 , 0]
+      }
+      else if(level == 5) {
+        cameras[0].cameraPosition = [0, 0, -30];
+      }
 
-    // Update all world matrices in the scene graph
-    scene.updateWorldMatrix();
+      // Update all world matrices in the scene graph
+      scene.updateWorldMatrix();
 
-    // var colorNormalized = [];
-    // for(let i=0; i<uiObj.color.length - 1; i++) {
-    //   colorNormalized.push(uiObj.color[i]/255);
-    // }
-    // colorNormalized.push(1);
+      // var colorNormalized = [];
+      // for(let i=0; i<uiObj.color.length - 1; i++) {
+      //   colorNormalized.push(uiObj.color[i]/255);
+      // }
+      // colorNormalized.push(1);
 
-    // var lightColorNormalized = [];
-    // for(let i=0; i<luz.lightColor.length - 1; i++) {
-    //   lightColorNormalized.push(luz.lightColor[i]/255);
-    // }
+      // var lightColorNormalized = [];
+      // for(let i=0; i<luz.lightColor.length - 1; i++) {
+      //   lightColorNormalized.push(luz.lightColor[i]/255);
+      // }
 
-    // var specularColorNormalized = [];
-    // for(let i=0; i<luz.specularColor.length - 1; i++) {
-    //   specularColorNormalized.push(luz.specularColor[i]/255);
-    // }
+      // var specularColorNormalized = [];
+      // for(let i=0; i<luz.specularColor.length - 1; i++) {
+      //   specularColorNormalized.push(luz.specularColor[i]/255);
+      // }
 
-    if(animationRegulator > 190 && speed > 0) {
-      speed += 1;
-      speed *= -1;
-    }
-    else if(animationRegulator < -24 && speed < 0){
-      speed -= 1;
-      speed *= -1;
-      moveEnemys(deltaTime, speed, 2);
-    }
+      if(animationRegulator > 190 && speed > 0) {
+        speed += 1;
+        speed *= -1;
+      }
+      else if(animationRegulator < -24 && speed < 0){
+        speed -= 1;
+        speed *= -1;
+        moveEnemys(deltaTime, speed, 2);
+      }
 
-    console.log(barrierLife)
-    moveEnemys(deltaTime, speed, 1);
+      moveEnemys(deltaTime, speed, 1);
 
-    // Compute all the matrices for rendering
-    objects.forEach(function (object) {
-      
-      object.drawInfo.uniforms.u_lightColor = [1,1,1];
+      // Compute all the matrices for rendering
+      objects.forEach(function (object) {
+        
+        object.drawInfo.uniforms.u_lightColor = [1,1,1];
 
-      object.drawInfo.uniforms.u_specularColor = [1,1,1]; 
+        object.drawInfo.uniforms.u_specularColor = [1,1,1]; 
 
-      object.drawInfo.uniforms.u_matrix = m4.multiply(
-        viewProjectionMatrix,
-        object.worldMatrix
-      );
-      
+        object.drawInfo.uniforms.u_matrix = m4.multiply(
+          viewProjectionMatrix,
+          object.worldMatrix
+        );
+        
+        if(level == 4) {
+          object.drawInfo.uniforms.u_lightWorldPosition = [nodeInfosByName['p1'].trs.translation[0], nodeInfosByName['p1'].trs.translation[1] - 5, nodeInfosByName['p1'].trs.translation[2]+2];
+        }
+        else if(level == 5) {
+          object.drawInfo.uniforms.u_lightWorldPosition = [0, 0, -5];
+        }
+        else {
+          object.drawInfo.uniforms.u_lightWorldPosition = [0, 0, 5];
+        }
 
-      object.drawInfo.uniforms.u_lightWorldPosition = [0, 0, 5];
+        object.drawInfo.uniforms.u_world = m4.multiply(object.worldMatrix, m4.yRotation(fRotationRadians));
 
-      object.drawInfo.uniforms.u_world = m4.multiply(object.worldMatrix, m4.yRotation(fRotationRadians));
+        object.drawInfo.uniforms.u_worldInverseTranspose = m4.transpose(m4.inverse(object.worldMatrix));
+        
+        object.drawInfo.uniforms.u_viewWorldPosition = cameras[0].cameraPosition;
 
-      object.drawInfo.uniforms.u_worldInverseTranspose = m4.transpose(m4.inverse(object.worldMatrix));
-      
-      object.drawInfo.uniforms.u_viewWorldPosition = cameras[0].cameraPosition;
+        object.drawInfo.uniforms.u_shininess = 300;
 
-      object.drawInfo.uniforms.u_shininess = 300;
+        object.drawInfo.uniforms.u_color= [0,1,0,1];
+      });
 
-      object.drawInfo.uniforms.u_color= [0,1,0,1];
-    });
+      // ------ Draw the objects --------
+      twgl.drawObjectList(gl, objectsToDraw);
 
-    // ------ Draw the objects --------
-    twgl.drawObjectList(gl, objectsToDraw);
+      document.getElementById('gameScore').textContent = score;
+      document.getElementById('playerLife').textContent = playerLive;
+      document.getElementById('level').textContent = level;
+      //updateScene();
 
-    document.getElementById('gameScore').textContent = score;
-    document.getElementById('playerLife').textContent = playerLive;
-    document.getElementById('level').textContent = level;
-    //updateScene();
+      requestAnimationFrame(drawScene);
 
-    requestAnimationFrame(drawScene);
+      if(playerLive == 0 && !gameOver) {
+        deathSound.play();
+        bgm.pause();
+        gameOver = true;
+        //window.location.reload();
+      }
 
-    if(playerLive == 0 && !gameOver) {
-      alert('ruim');
-      gameOver = true;
-    }
+      if(numberOfEnemys == 0 && !gameOver) {
+        alert(`Ganhou! \nScore: ${score}`);
+        gameOver = true;
+        window.location.reload();
+      }
   }
+}
 }
 
 main();

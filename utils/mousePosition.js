@@ -1,6 +1,6 @@
 var mousePositionX;
 var mousePositionXNormalized;
-
+var bgmIsPlaying = false;
 var canvas = document.getElementById('canvas');
 
 //tentar dar update no canvas conforme a animação rola no requestanimationframe
@@ -13,8 +13,14 @@ canvas.addEventListener('mousemove', function (e) {
 
 //quando clica em algo
 canvas.addEventListener('click', function(f) {
-    if(!projectileAlive) {
+    if(!bgmIsPlaying && !gameOver) {
+        bgm.play();
+    }
+    if(!projectileAlive && !gameOver) {
         createProjectile();
+    }
+    if(gameOver) {
+        window.location.reload();
     }
     //addVertice();
 })

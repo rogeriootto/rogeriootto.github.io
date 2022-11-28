@@ -47,6 +47,10 @@ function checkProjectileCollision (objeto1, objeto2) {
                     deleteProjectile();
                     deleteObject(objeto2);
                     givePoints(objeto2.trs.type);
+
+                    if(objeto2.trs.type == 'e') {
+                        numberOfEnemys -=1;
+                    }
                 }
             }
         }
@@ -91,6 +95,7 @@ function checkPlayerCollision(player, objeto) {
             if((player.trs.translation[1] + 1) >= (objeto.trs.translation[1] -1) && (player.trs.translation[1] - 1) <= (objeto.trs.translation[1] + 1)) {
                 //COLIDIU
                 playerLive -= 1;
+                hitSound.play();
                 objeto.trs.translation = [50,50,50];
 
                 if(objeto.trs.type == 'pro') {
@@ -212,8 +217,8 @@ function createEnemy(i) {
 }
 
 function createProjectile() {
-
-    updateScene()
+    shootSound.play();
+    updateScene();
 
     var newObj = {
         name: 'projectile1',
@@ -330,7 +335,6 @@ function moveEnemys(deltaTime, speed, animationType) {
 }
 
 function createEnemyProjectile() {
-
     updateScene()
     
     var randomEnemy = Math.floor(Math.random() * 6);
@@ -360,7 +364,6 @@ function createEnemyProjectile() {
 }
 
 function createEnemyProjectile2() {
-
     updateScene()
     
     var randomEnemy = Math.floor(Math.random() * 6);
