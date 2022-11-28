@@ -195,8 +195,8 @@ function createEnemy(i) {
         type: 'e',
         translation: [enemyPos.x, enemyPos.y, 0],
         children: [],
-        vao: cubeVAO,
-        bufferInfo: cubeBufferInfo,
+        vao: spaceInvaderVAO,
+        bufferInfo: spaceBufferInfo,
     }
 
     objeto.children[2].children.push(newObj);
