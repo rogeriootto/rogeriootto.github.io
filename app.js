@@ -5,7 +5,10 @@ var vs = `#version 300 es
 in vec4 a_position;
 in vec3 a_normal;
 
+//lightworld duplicado
 uniform vec3 u_lightWorldPosition;
+uniform vec3 u_lightWorldPosition2;
+
 uniform vec3 u_viewWorldPosition;
 
 uniform mat4 u_matrix;
@@ -13,8 +16,13 @@ uniform mat4 u_world;
 uniform mat4 u_worldInverseTranspose;
 
 out vec3 v_normal;
+
+//duplicados surface to light e view
 out vec3 v_surfaceToLight;
 out vec3 v_surfaceToView;
+
+out vec3 v_surfaceToLight2;
+out vec3 v_surfaceToView2;
 
 void main() {
 
@@ -28,6 +36,9 @@ void main() {
 
   v_surfaceToLight = u_lightWorldPosition - surfaceWorldPosition;
   v_surfaceToView = u_viewWorldPosition - surfaceWorldPosition;
+
+  v_surfaceToLight2 = u_lightWorldPosition2 - surfaceWorldPosition;
+  v_surfaceToView2 = u_viewWorldPosition - surfaceWorldPosition;
 }
 `;
 
@@ -36,36 +47,69 @@ precision highp float;
 
 // Passed in from the vertex shader.
 in vec3 v_normal;
+
+//duplicados
 in vec3 v_surfaceToLight;
 in vec3 v_surfaceToView;
+
+in vec3 v_surfaceToLight2;
+in vec3 v_surfaceToView2;
+
 
 uniform vec4 u_color;
 
 uniform float u_shininess;
 
+//duplicados
 uniform vec3 u_lightColor;
 uniform vec3 u_specularColor;
+
+uniform vec3 u_lightColor2;
+uniform vec3 u_specularColor2;
 
 out vec4 outColor;
 
 void main() {
 
   vec3 normal = normalize(v_normal);
+
   vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
   vec3 surfaceToViewDirection = normalize(v_surfaceToView);
+
+  vec3 surfaceToLightDirection2 = normalize(v_surfaceToLight2);
+  vec3 surfaceToViewDirection2 = normalize(v_surfaceToView2);
+
   vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
+  vec3 halfVector2 = normalize(surfaceToLightDirection2 + surfaceToViewDirection2);
 
   float light = dot(normal, surfaceToLightDirection);
+  float light2 = dot(normal, surfaceToLightDirection2);
 
   float specular = 0.0;
+  float specular2 = 0.0;
+
+  vec3 color;
+  vec3 color2;
+
+  vec3 spec;
+  vec3 spec2;
+
+  specular = pow(dot(normal, halfVector), u_shininess);
+  specular2 = pow(dot(normal, halfVector2), u_shininess);
 
   if (light > 0.0) {
-    specular = pow(dot(normal, halfVector), u_shininess);
+    color = light * u_lightColor;
+    spec = specular * u_specularColor;
+
+  }
+  if (light2 > 0.0) {
+    color2 = light2 * u_lightColor2;
+    spec2 = specular2 * u_specularColor2;
   }
 
   outColor = u_color;
-  outColor.rgb *= light * u_lightColor;
-  outColor.rgb += specular * u_specularColor;
+  outColor.rgb *= (color + color2);
+  outColor.rgb += (spec + spec2);
 }
 `;
 
@@ -522,8 +566,10 @@ function main() {
       objects.forEach(function (object) {
         
         object.drawInfo.uniforms.u_lightColor = [1,1,1];
+        object.drawInfo.uniforms.u_specularColor = [1,0,0]; 
 
-        object.drawInfo.uniforms.u_specularColor = [1,1,1]; 
+        object.drawInfo.uniforms.u_lightColor2 = [1,0,0];
+        object.drawInfo.uniforms.u_specularColor2 = [1,1,1]; 
 
         object.drawInfo.uniforms.u_matrix = m4.multiply(
           viewProjectionMatrix,
@@ -534,10 +580,17 @@ function main() {
           object.drawInfo.uniforms.u_lightWorldPosition = [nodeInfosByName['p1'].trs.translation[0], nodeInfosByName['p1'].trs.translation[1] - 5, nodeInfosByName['p1'].trs.translation[2]+2];
         }
         else if(level == 5) {
-          object.drawInfo.uniforms.u_lightWorldPosition = [0, 0, -5];
+          object.drawInfo.uniforms.u_lightWorldPosition = [0,0,-5];
         }
         else {
-          object.drawInfo.uniforms.u_lightWorldPosition = [0, 0, 5];
+          object.drawInfo.uniforms.u_lightWorldPosition = [5, 0, 5];
+        }
+        
+        if(projectileAlive) {
+          object.drawInfo.uniforms.u_lightWorldPosition2 = [nodeInfosByName['projectile1'].trs.translation[0],nodeInfosByName['projectile1'].trs.translation[1],nodeInfosByName['projectile1'].trs.translation[2] + 5];
+        }
+        else {
+          object.drawInfo.uniforms.u_lightWorldPosition2 = [0,0,0]
         }
 
         object.drawInfo.uniforms.u_world = m4.multiply(object.worldMatrix, m4.yRotation(fRotationRadians));
@@ -548,7 +601,7 @@ function main() {
 
         object.drawInfo.uniforms.u_shininess = 300;
 
-        object.drawInfo.uniforms.u_color= [0,1,0,1];
+        object.drawInfo.uniforms.u_color= [1,1,1,1];
       });
 
       // ------ Draw the objects --------
