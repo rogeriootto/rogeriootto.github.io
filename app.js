@@ -566,10 +566,7 @@ function main() {
       objects.forEach(function (object) {
         
         object.drawInfo.uniforms.u_lightColor = [1,1,1];
-        object.drawInfo.uniforms.u_specularColor = [1,0,0]; 
-
-        object.drawInfo.uniforms.u_lightColor2 = [1,0,0];
-        object.drawInfo.uniforms.u_specularColor2 = [1,1,1]; 
+        object.drawInfo.uniforms.u_specularColor = [1,1,1]; 
 
         object.drawInfo.uniforms.u_matrix = m4.multiply(
           viewProjectionMatrix,
@@ -587,9 +584,13 @@ function main() {
         }
         
         if(projectileAlive) {
+          object.drawInfo.uniforms.u_lightColor2 = [1,0,0];
+          object.drawInfo.uniforms.u_specularColor2 = [1,0,0]; 
           object.drawInfo.uniforms.u_lightWorldPosition2 = [nodeInfosByName['projectile1'].trs.translation[0],nodeInfosByName['projectile1'].trs.translation[1],nodeInfosByName['projectile1'].trs.translation[2] + 5];
         }
         else {
+          object.drawInfo.uniforms.u_lightColor2 = [0,0,0];
+          object.drawInfo.uniforms.u_specularColor2 = [0,0,0]; 
           object.drawInfo.uniforms.u_lightWorldPosition2 = [0,0,0]
         }
 
