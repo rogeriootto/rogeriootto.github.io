@@ -28,10 +28,20 @@ canvas {
 #siLogo {
     width: 15%;
     height: auto;
+    align-items: center;
     margin-left: 10px;
     margin-right: 10px;
     margin-top: 2%;
     margin-bottom: auto;
+}
+
+#siLogo h1 {
+    font-size: 30px;
+}
+
+#silogo #gitlogo {
+    width: 15%;
+    padding-left: 90px;
 }
 
 img {
